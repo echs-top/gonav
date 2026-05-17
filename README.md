@@ -23,3 +23,7 @@
 
 # 备份
 需要备份 data文件夹、public文件夹、.env.local
+
+# 其他
+
+其他平台若想使用，请下载合适的[bun](https://github.com/oven-sh/bun)并替换
