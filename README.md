@@ -16,7 +16,10 @@
 ————bun  #运行器
 ```
 
-# 启动命令
+# 运行
 ```
 ./bun --smol server.js
 ```
+
+# 备份
+需要备份 data文件夹、public文件夹、.env.local
