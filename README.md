@@ -1,6 +1,6 @@
 # gonav
 
-源项目[go-nav](https://github.com/dengxiwang/go-nav)，通过action构建生成方便linux_64平台运行(server模式)的文件，使用[bun](https://github.com/oven-sh/bun)作为启动器
+源项目[go-nav](https://github.com/dengxiwang/go-nav)，通过action构建生成方便linux_64平台运行(server模式)的文件，使用[bun](https://github.com/oven-sh/bun)作为环境
 
 # 目录
 
