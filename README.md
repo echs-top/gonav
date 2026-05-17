@@ -5,15 +5,15 @@
 # 目录
 
 ```
---目录
-----.next
-----data #数据目录
-----node_modules
-----public #文件目录
-----.env.local #环境变量
-----package.json
-----server.js
-----bun #运行器
+——目录
+————.next
+————data #数据目录
+————node_modules
+————public #文件目录
+————.env.local #环境变量
+————package.json
+————server.js
+————bun #运行器
 ```
 
 # 启动命令
