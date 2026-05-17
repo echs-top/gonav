@@ -26,4 +26,4 @@
 
 # 其他
 
-其他平台若想使用，请下载合适的[bun](https://github.com/oven-sh/bun)并替换
+其他平台若想使用，需自行下载合适的[bun](https://github.com/oven-sh/bun)并替换
