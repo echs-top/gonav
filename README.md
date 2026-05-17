@@ -18,8 +18,9 @@
 
 # 运行
 ```
-./bun --smol server.js
+./bun server.js
 ```
+可附近`--smol`使用更少内存，但会更频繁地进行垃圾回收
 
 # 备份
 需要备份 data文件夹、.env.local文件
