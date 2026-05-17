@@ -1,86 +1,71 @@
-name: Build and Release Go-Nav
+name: Build and Release go-nav
 
 on:
-  workflow_dispatch: # 允许在 GitHub Actions 页面手动点击触发运行
+  workflow_dispatch: # 允许在 GitHub Actions 页面手动触发工作流
 
 permissions:
-  contents: write # 必须的权限，允许机器人创建 Release 并上传文件
+  contents: write # 必须配置 write 权限，才能自动创建 Release 和上传附件
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
-    
-    steps:
-      # 1. 拉取目标仓库
-      - name: Checkout target repository
-        uses: actions/checkout@v4
-        with:
-          repository: dengxiwang/go-nav
-          path: go-nav
 
-      # 2. 下载并配置 Linux 版本的 bun，进行构建
-      - name: Download Linux Bun and Build
-        working-directory: ./go-nav
+    steps:
+      - name: 1. 下载构建：拉取代码与配置 Bun 环境
         run: |
-          # 下载并解压 bun-linux-x64
+          # 拉取目标仓库代码
+          git clone https://github.com/dengxiwang/go-nav.git
+          cd go-nav
+
+          # 下载 Bun 的 Linux x64 压缩包
           wget https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64.zip
-          unzip bun-linux-x64.zip
           
-          # 提取 bun 到当前目录 (/go-nav) 并赋予执行权限
+          # 解压并提取 bun 可执行文件到 go-nav 根目录
+          unzip bun-linux-x64.zip
           mv bun-linux-x64/bun ./bun
           chmod +x ./bun
           
-          # 安装依赖并构建
+          # 清理临时下载的文件
+          rm -rf bun-linux-x64 bun-linux-x64.zip
+
+      - name: 2. 下载构建：安装依赖与打包
+        run: |
+          cd go-nav
+          # 使用提取的 bun 进行安装和构建
           ./bun install
           ./bun run build:server
 
-      # 3. 准备配置文件并打包 Linux 版本
-      - name: Package Linux version
-        working-directory: ./go-nav
+      - name: 3. 进行打包：整理 standalone 目录并压缩
         run: |
-          # 复制并重命名环境配置文件
+          cd go-nav
+          
+          # 复制并重命名环境变量文件
           cp .env.example .next/standalone/.env.local
           
-          # 将 linux 版的 bun 放入 standalone 目录
-          cp ./bun .next/standalone/
+          # 将 bun 放入 standalone 目录
+          cp bun .next/standalone/
           
-          # 将 standalone 目录下的所有内容压缩为 gonav-linux_64.tar.gz
-          # -C .next/standalone . 表示进入该目录并打包其下的所有文件
-          tar -czvf gonav-linux_64.tar.gz -C .next/standalone .
+          # 进入 standalone 目录进行压缩
+          cd .next/standalone
+          # 将所有内容压缩为 gonav-linux_64.tar.gz，并将其保存到 GitHub 工作区的根目录
+          tar -czvf $GITHUB_WORKSPACE/gonav-linux_64.tar.gz .
 
-      # 4. 下载 Windows 版本的 bun 并打包
-      - name: Package Windows version
-        working-directory: ./go-nav
-        run: |
-          # 下载并解压 bun-windows-x64
-          wget https://github.com/oven-sh/bun/releases/latest/download/bun-windows-x64.zip
-          unzip bun-windows-x64.zip
-          
-          # 从 standalone 目录中移除刚才放进去的 Linux bun，替换为 Windows 的 bun.exe
-          rm .next/standalone/bun
-          cp bun-windows-x64/bun.exe .next/standalone/
-          
-          # 打包为 gonav-windows_64.tar.gz
-          tar -czvf gonav-windows_64.tar.gz -C .next/standalone .
-
-      # 5. 读取 package.json 中的版本号
-      - name: Get version from package.json
-        working-directory: ./go-nav
+      - name: 4. 推送前准备：提取应用版本号
         id: get_version
         run: |
-          # 使用 jq 解析 package.json 中的 version 字段
-          VERSION=$(jq -r .version package.json)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Parsed version: $VERSION"
+          cd go-nav
+          # 从 package.json 中匹配包含 "version" 的行，并提取冒号后面的值（例如 1.3.2）
+          VERSION=$(grep '"version"' package.json | head -1 | awk -F '"' '{print $4}')
+          echo "提取到的版本号为: $VERSION"
+          
+          # 将版本号写入 GITHUB_OUTPUT 供下一步使用
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # 6. 创建 Release 并推送压缩包
-      - name: Create Release and Upload Assets
+      - name: 5. 推送：创建 Release 并上传压缩包
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.VERSION }}
-          name: v${{ env.VERSION }}
-          files: |
-            go-nav/gonav-linux_64.tar.gz
-            go-nav/gonav-windows_64.tar.gz
+          tag_name: v${{ steps.get_version.outputs.version }} # 版本名称，例如 v1.3.2
+          name: v${{ steps.get_version.outputs.version }}
+          files: gonav-linux_64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
