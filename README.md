@@ -26,7 +26,7 @@
 ```
 
 # 备份
-需要备份 data文件夹、.env.local文件
+建议备份 data文件夹、.env.local文件
 
 # 其他
 
