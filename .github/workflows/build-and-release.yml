@@ -72,7 +72,7 @@ jobs:
           ./bun install
           ./bun run build:server
 
-      - name: 3. 进行打包：整理 standalone 目录并多格式压缩
+      - name: 3. 进行打包：整理 standalone 目录并多格式极限压缩
         if: steps.check.outputs.has_update == 'true'
         run: |
           cd go-nav
@@ -86,14 +86,14 @@ jobs:
           # 进入 standalone 目录进行压缩
           cd .next/standalone
           
-          # 1. 打包为常规的 tar.gz
-          tar -czvf $GITHUB_WORKSPACE/gonav-linux_64.tar.gz .
+          # 1. 打包为 tar.gz (gzip 最高等级为 9)
+          tar -I 'gzip -9' -cvf $GITHUB_WORKSPACE/gonav-linux_64.tar.gz .
           
-          # 2. 打包为 tar.zst (现代高效率压缩，解压速度极快)
-          tar --zstd -cvf $GITHUB_WORKSPACE/gonav-linux_64.tar.zst .
+          # 2. 打包为 tar.zst (zstd 最高常规等级 19，使用 -T0 开启全核多线程)
+          tar -I 'zstd -19 -T0' -cvf $GITHUB_WORKSPACE/gonav-linux_64.tar.zst .
           
-          # 3. 打包为 tar.xz (极限高压缩比，体积最小)
-          tar -cJvf $GITHUB_WORKSPACE/gonav-linux_64.tar.xz .
+          # 3. 打包为 tar.xz (xz 最高等级为 9，使用 -T0 开启全核多线程)
+          tar -I 'xz -9 -T0' -cvf $GITHUB_WORKSPACE/gonav-linux_64.tar.xz .
 
       - name: 4. 推送：创建 Release 并上传多个压缩包
         if: steps.check.outputs.has_update == 'true'
