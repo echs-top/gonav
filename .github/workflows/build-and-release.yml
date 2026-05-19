@@ -19,7 +19,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 1. 从目标仓库读取 package.json，并提取 version 字段 (例如提取出 1.6.1)
+          # 1. 从目标仓库读取 package.json，并提取 version 字段
           REMOTE_VERSION=$(curl -s https://raw.githubusercontent.com/dengxiwang/go-nav/refs/heads/main/package.json | grep '"version"' | head -1 | awk -F '"' '{print $4}')
           
           # 容错处理：确保成功获取到了远程版本号
@@ -29,7 +29,7 @@ jobs:
           fi
           echo "目标仓库最新版本号为: $REMOTE_VERSION"
           
-          # 2. 获取你当前仓库最新发布的 Release tag（例如 v1.6.0），如果没有发布过则为空
+          # 2. 获取你当前仓库最新发布的 Release tag
           LATEST_RELEASE=$(gh release view --repo ${{ github.repository }} --json tagName -q .tagName 2>/dev/null || echo "")
           echo "当前仓库最新 Release 为: $LATEST_RELEASE"
           
@@ -43,7 +43,6 @@ jobs:
           else
             echo "发现新版本 ($REMOTE_VERSION)，准备开始构建..."
             echo "has_update=true" >> $GITHUB_OUTPUT
-            # 将版本号保存到 output 供最后一步发版使用，不再需要原来的第 4 步了
             echo "version=$REMOTE_VERSION" >> $GITHUB_OUTPUT
           fi
 
@@ -73,7 +72,7 @@ jobs:
           ./bun install
           ./bun run build:server
 
-      - name: 3. 进行打包：整理 standalone 目录并压缩
+      - name: 3. 进行打包：整理 standalone 目录并多格式压缩
         if: steps.check.outputs.has_update == 'true'
         run: |
           cd go-nav
@@ -86,15 +85,25 @@ jobs:
           
           # 进入 standalone 目录进行压缩
           cd .next/standalone
-          # 将所有内容压缩为 gonav-linux_64.tar.gz，并将其保存到 GitHub 工作区的根目录
+          
+          # 1. 打包为常规的 tar.gz
           tar -czvf $GITHUB_WORKSPACE/gonav-linux_64.tar.gz .
+          
+          # 2. 打包为 tar.zst (现代高效率压缩，解压速度极快)
+          tar --zstd -cvf $GITHUB_WORKSPACE/gonav-linux_64.tar.zst .
+          
+          # 3. 打包为 tar.xz (极限高压缩比，体积最小)
+          tar -cJvf $GITHUB_WORKSPACE/gonav-linux_64.tar.xz .
 
-      - name: 4. 推送：创建 Release 并上传压缩包
+      - name: 4. 推送：创建 Release 并上传多个压缩包
         if: steps.check.outputs.has_update == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.check.outputs.version }} # 直接使用第 0 步提取的版本名称，例如 v1.6.1
+          tag_name: v${{ steps.check.outputs.version }}
           name: v${{ steps.check.outputs.version }}
-          files: gonav-linux_64.tar.gz
+          files: |
+            gonav-linux_64.tar.gz
+            gonav-linux_64.tar.zst
+            gonav-linux_64.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
