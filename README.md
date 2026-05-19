@@ -16,6 +16,11 @@
 |—— bun  #运行器
 ```
 
+# 下载
+可直接服务器远程下载
+```
+https://github.com/echs-top/gonav/releases/latest/download/gonav-linux_64.tar.gz
+```
 # 运行
 ```
 ./bun server.js
